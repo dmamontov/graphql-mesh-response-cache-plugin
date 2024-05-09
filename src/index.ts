@@ -96,7 +96,15 @@ export default function useResponseCache(
                 // @ts-expect-error
                 result = (await payload.schema._withoutCacheExecutor(request)) as ExecutionResult;
 
-                if (result?.errors && result.errors.length > 0) {
+                if (
+                    (result?.errors && result.errors.length > 0) ||
+                    !result?.data ||
+                    (Object.keys(result.data).includes(config.fieldName) &&
+                        !result.data[config.fieldName]) ||
+                    (Object.keys(result.data).includes('__gqtlw__') &&
+                        Object.keys(result.data.__gqtlw__).includes(config.fieldName) &&
+                        !result.data.__gqtlw__[config.fieldName])
+                ) {
                     return result;
                 }
 
