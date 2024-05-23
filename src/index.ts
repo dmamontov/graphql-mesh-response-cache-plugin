@@ -1,3 +1,4 @@
+import { type Plugin } from 'graphql-yoga';
 import { type MeshPlugin, type MeshPluginOptions } from '@graphql-mesh/types';
 import { createDefaultExecutor } from '@graphql-tools/delegate';
 import { type ExecutionRequest, type ExecutionResult } from '@graphql-tools/utils';
@@ -8,13 +9,30 @@ export default function useResponseCache(
     pluginOptions: MeshPluginOptions<ResponseCacheConfig>,
 ): MeshPlugin<any> {
     const { enabled, caches } = pluginOptions;
-
-    if (!evaluate(enabled)) {
-        return {};
-    }
+    const isEnabled = evaluate(enabled);
 
     return {
+        onPluginInit({ addPlugin }) {
+            addPlugin({
+                onParams({ params, setParams }) {
+                    if (!params.variables) {
+                        return;
+                    }
+
+                    setParams({
+                        query: params.query + '\n# variables=' + JSON.stringify(params.variables),
+                        variables: params.variables,
+                        extensions: params.extensions,
+                        operationName: params.operationName,
+                    });
+                },
+            } as Plugin);
+        },
         onDelegate(payload) {
+            if (!isEnabled) {
+                return;
+            }
+
             const config = caches.find(
                 cache =>
                     cache.sourceName === payload.sourceName &&
@@ -108,7 +126,7 @@ export default function useResponseCache(
                     return result;
                 }
 
-                await payload.context.cache.set(cacheKey, result, config.invalidate);
+                //await payload.context.cache.set(cacheKey, result, config.invalidate);
 
                 await invalidate();
 
