@@ -126,7 +126,7 @@ export default function useResponseCache(
                     return result;
                 }
 
-                //await payload.context.cache.set(cacheKey, result, config.invalidate);
+                await payload.context.cache.set(cacheKey, result, config.invalidate);
 
                 await invalidate();
 
